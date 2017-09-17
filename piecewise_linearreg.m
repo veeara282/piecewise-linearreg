@@ -1,4 +1,6 @@
 function [intervals, beta] = piecewise_linearreg(points, lambda)
+% PIECEWISE_LINEARREG Finds the set of line segments that most closely fit
+% the given points with regularization parameter lambda.
     n = size(points, 1);
 
     % Sort (x, y) pairs in ascending order by x coordinate
@@ -28,9 +30,12 @@ function [intervals, beta] = piecewise_linearreg(points, lambda)
             % Calculate the parameters
             Beta(i, j, :) = pinv(X_slice_t*X_slice) * X_slice_t * y_slice;
             
+            %disp(size(X_slice));
+            %disp(size(Beta(i, j, :)));
+            
             % Calculate the error
-            errors = y_slice - X_slice * Beta(i, j, :);
-            error(i, j) = dot(errors, errors);
+            errors = y_slice - X_slice * reshape(Beta(i, j, :), 2, 1);
+            error(i, j) = dot(errors, errors) / (j - i);
         end
     end
         
@@ -42,13 +47,13 @@ function [intervals, beta] = piecewise_linearreg(points, lambda)
     cost(2) = lambda;
     
     % The subsolution i to use for each solution k
-    prev = zeros(n, 1);
-    prev(1) = 1;
-    prev(2) = 1;
+    prev = ones(n, 1);
     
     % Calculate the cost and last segment endpoint for each subsolution
     for k = 3:n
-        for i = 1:k
+        % Do i = 1 outside the loop because it breaks indexing into cost
+        cost(k) = error(1, k) + lambda;
+        for i = 2:k
             % Reigning champion algorithm for min and argmin
             new_cost = error(i, k) + lambda + cost(i - 1);
             if new_cost < cost(k)
@@ -69,12 +74,12 @@ function [intervals, beta] = piecewise_linearreg(points, lambda)
     while k > 1
         m = m + 1;
         beta(m, :) = Beta(prev(k), k, :);
-        intervals = [X(prev(k), 2) X(k, 2)];
+        intervals(m, :) = [X(prev(k), 2) X(k, 2)];
         k = prev(k) - 1;
     end
     
     % Only return as many rows as necessary, and reverse the order so they
     % go from lowest to highest x
-    intervals = intervals(1:-1:m);
-    beta = beta(1:-1:m);
+    intervals = intervals(1:-1:m, :);
+    beta = beta(1:-1:m, :);
 end
