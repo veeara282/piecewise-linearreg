@@ -1,6 +1,8 @@
 function [intervals, beta] = piecewise_linearreg(points, lambda)
 % PIECEWISE_LINEARREG Finds the set of line segments that most closely fit
 % the given points with regularization parameter lambda.
+%
+%   NOTE: For best results, pick lambda around 0.01.
     n = size(points, 1);
 
     % Sort (x, y) pairs in ascending order by x coordinate
@@ -29,9 +31,6 @@ function [intervals, beta] = piecewise_linearreg(points, lambda)
             
             % Calculate the parameters
             Beta(i, j, :) = pinv(X_slice_t*X_slice) * X_slice_t * y_slice;
-            
-            %disp(size(X_slice));
-            %disp(size(Beta(i, j, :)));
             
             % Calculate the error
             errors = y_slice - X_slice * reshape(Beta(i, j, :), 2, 1);
@@ -80,6 +79,6 @@ function [intervals, beta] = piecewise_linearreg(points, lambda)
     
     % Only return as many rows as necessary, and reverse the order so they
     % go from lowest to highest x
-    intervals = intervals(1:-1:m, :);
-    beta = beta(1:-1:m, :);
+    intervals = intervals(m:-1:1, :);
+    beta = beta(m:-1:1, :);
 end
